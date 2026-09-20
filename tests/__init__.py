@@ -1,0 +1,1 @@
+"""Sına uygulamasının test paketi."""
