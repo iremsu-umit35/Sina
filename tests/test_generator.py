@@ -75,7 +75,13 @@ def test_generate_tests_uses_prompt_ai_and_real_validator(
 
     def fake_generate_with_ai(prompt: str) -> str:
         captured["prompt"] = prompt
-        return "```python\ndef test_example():\n    assert True\n```"
+        return (
+            "```python\n"
+            "from calculator import bol\n\n"
+            "def test_example():\n"
+            "    assert True\n"
+            "```"
+        )
 
     monkeypatch.setattr(generator, "generate_with_ai", fake_generate_with_ai)
 
@@ -92,14 +98,16 @@ def test_generate_tests_uses_prompt_ai_and_real_validator(
         scenarios,
         TARGET_MODULE,
     )
-    assert result == "def test_example():\n    assert True"
+    assert result == (
+        "from calculator import bol\n\ndef test_example():\n    assert True"
+    )
 
 
 def test_generate_tests_passes_ai_response_to_validator(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     source_code, functions, scenarios = _sample_inputs()
-    captured: dict[str, str] = {}
+    captured: dict[str, object] = {}
 
     monkeypatch.setattr(
         generator,
@@ -107,8 +115,14 @@ def test_generate_tests_passes_ai_response_to_validator(
         lambda prompt: "raw AI response",
     )
 
-    def fake_validate_generated_tests(generated_text: str) -> str:
+    def fake_validate_generated_tests(
+        generated_text: str,
+        target_module: str,
+        expected_functions: list[str],
+    ) -> str:
         captured["generated_text"] = generated_text
+        captured["target_module"] = target_module
+        captured["expected_functions"] = expected_functions
         return "clean pytest code"
 
     monkeypatch.setattr(
@@ -124,7 +138,11 @@ def test_generate_tests_passes_ai_response_to_validator(
         target_module=TARGET_MODULE,
     )
 
-    assert captured == {"generated_text": "raw AI response"}
+    assert captured == {
+        "generated_text": "raw AI response",
+        "target_module": TARGET_MODULE,
+        "expected_functions": ["bol"],
+    }
     assert result == "clean pytest code"
 
 
@@ -162,7 +180,11 @@ def test_generate_tests_propagates_validator_error(
         lambda prompt: "generated text",
     )
 
-    def fake_validate_generated_tests(generated_text: str) -> str:
+    def fake_validate_generated_tests(
+        generated_text: str,
+        target_module: str,
+        expected_functions: list[str],
+    ) -> str:
         raise validator_error
 
     monkeypatch.setattr(

@@ -119,4 +119,9 @@ def generate_tests(
         target_module,
     )
     generated_text = generate_with_ai(prompt)
-    return validate_generated_tests(generated_text)
+    expected_functions = [function.name for function in functions]
+    return validate_generated_tests(
+        generated_text,
+        target_module=target_module,
+        expected_functions=expected_functions,
+    )
